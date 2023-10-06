@@ -2,31 +2,38 @@ import { useEffect, useState, useCallback } from "react";
 import PropTypes from "prop-types";
 import logo from "./assets/loader.gif";
 import "./App.css";
-
-function Nav(props) {
-  const { isNavOpen, toggleNav, change } = props;
-
+function Nav({ isNavOpen, toggleNav, change }) {
   return (
-    <header className="bg-blue-400 text-blue-600 py-4">
-      <div className="container mx-auto flex items-center justify-between">
+    <header className="bg-blue-500 text-blue-100">
+      <div className="container mx-auto flex justify-between p-4">
         <div className="flex items-center">
           <button
+            aria-label="Toggle navigation"
+            type="button"
             className="sm:hidden block text-blue-100 focus:outline-none mr-4"
             onClick={toggleNav}
           >
             {isNavOpen ? "Close" : "Menu"}
           </button>
-          <h1 className="text-4xl" onClick={()=> change("android")}>News App</h1>
+          <h1
+            className="text-2xl sm:text-4xl"
+            onClick={() => change("general")}
+          >
+            News App
+          </h1>
         </div>
         <nav
           className={`sm:block ${isNavOpen ? "block" : "hidden"} mt-4 sm:mt-0`}
         >
-          <ul className="flex space-x-4 items-center justify-between">
+          <ul className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 items-center justify-between">
             <li>
               <a
                 href="#home"
                 className="text-white hover:underline"
-                onClick={() => change("android")}
+                onClick={() => {
+                  change("general");
+                  toggleNav();
+                }}
               >
                 Home
               </a>
@@ -35,7 +42,10 @@ function Nav(props) {
               <a
                 href="#business"
                 className="text-white hover:underline"
-                onClick={() => change("business")}
+                onClick={() => {
+                  change("business");
+                  toggleNav();
+                }}
               >
                 Business
               </a>
@@ -44,9 +54,48 @@ function Nav(props) {
               <a
                 href="#technology"
                 className="text-white hover:underline"
-                onClick={() => change("technology")}
+                onClick={() => {
+                  change("technology");
+                  toggleNav();
+                }}
               >
                 Technology
+              </a>
+            </li>
+            <li>
+              <a
+                href="#entertainment"
+                className="text-white hover:underline"
+                onClick={() => {
+                  change("entertainment");
+                  toggleNav();
+                }}
+              >
+                Entertainment
+              </a>
+            </li>
+            <li>
+              <a
+                href="#health"
+                className="text-white hover:underline"
+                onClick={() => {
+                  change("health");
+                  toggleNav();
+                }}
+              >
+                Health
+              </a>
+            </li>
+            <li>
+              <a
+                href="#science"
+                className="text-white hover:underline"
+                onClick={() => {
+                  change("science");
+                  toggleNav();
+                }}
+              >
+                Science
               </a>
             </li>
             <li>
@@ -57,7 +106,6 @@ function Nav(props) {
                 className="bg-gray-300 text-gray-800 rounded-full p-2"
               />
             </li>
-            {/* Add more subheadings as needed */}
           </ul>
         </nav>
       </div>
@@ -74,12 +122,13 @@ Nav.propTypes = {
 function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [news, setNews] = useState([]);
-  const [apiChange, setApiChange] = useState("android");
+  const [apiChange, setApiChange] = useState("general");
   const [isNavOpen, setIsNavOpen] = useState(false);
 
-  function change(api) {
+  const change = (api) => {
     setApiChange(api);
-  }
+    closeNav(); // Close the navigation when an item is clicked
+  };
 
   const toggleNav = () => {
     setIsNavOpen(!isNavOpen);
@@ -89,40 +138,45 @@ function App() {
     setIsNavOpen(false);
   };
 
-  const api = useCallback(async () => {
-    let response = await fetch(
-      `https://newsapi.org/v2/everything?q=${apiChange}&apiKey=5e91c4b4a6ac46e193c41479cef88b47`
-    );
-    let result = await response.json();
-    console.log(result);
-    setNews(result.articles);
+  const fetchNews = useCallback(async () => {
+    try {
+      let response = await fetch(
+        `https://newsapi.org/v2/top-headlines?country=in&category=${apiChange}&apiKey=5e91c4b4a6ac46e193c41479cef88b47`
+      );
+      if (response.ok) {
+        let result = await response.json();
+        setNews(result.articles);
+      } else {
+        console.error("Error fetching news data.");
+      }
+    } catch (error) {
+      console.error("An error occurred:", error);
+    }
   }, [apiChange]);
 
   useEffect(() => {
     setTimeout(() => {
       setIsLoading(false);
-    }, 2000);
-    api();
-  }, [api]);
+    }, 5000);
+    fetchNews();
+  }, [fetchNews]);
 
   return (
     <div className={`App ${isNavOpen ? "nav-open" : ""}`}>
       {isLoading ? (
-        // Show loader when isLoading is true
         <img
           src={logo}
           alt="Loading..."
           style={{ width: "100px", height: "100px" }}
         />
       ) : (
-        // Show news content when isLoading is false
         <>
           <Nav isNavOpen={isNavOpen} toggleNav={toggleNav} change={change} />
           <main className="container mx-auto mt-4 p-4">
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {news.map((item, key) => (
                 <div
-                  className="w-full rounded-lg shadow-md overflow-hidden"
+                  className="w-full rounded-lg shadow-md overflow-hidden flex flex-col"
                   key={key}
                 >
                   <img
@@ -130,11 +184,13 @@ function App() {
                     src={item.urlToImage}
                     alt="News"
                   />
-                  <div className="p-4">
+                  <div className="flex-grow p-4">
                     <h4 className="text-xl font-semibold text-blue-600">
                       {item.title}
                     </h4>
-                    <p className="mb-2 leading-normal">{item.description}</p>
+                    <p className="mb-2 leading-normal flex-grow">
+                      {item.description}
+                    </p>
                     <a
                       href={item.url}
                       target="_blank"
@@ -143,7 +199,6 @@ function App() {
                     >
                       Read More
                     </a>
-                    {/* footer */}
                   </div>
                 </div>
               ))}
@@ -163,6 +218,7 @@ function App() {
           <div
             className={`overlay ${isNavOpen ? "show" : ""}`}
             onClick={closeNav}
+            style={{ zIndex: isNavOpen ? 1 : -1 }}
           ></div>
         </>
       )}
